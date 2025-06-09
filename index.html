@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js 相机运镜视频生成器 (增强版)</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="controls">
+        <h2>参数设置</h2>
+        
+        <h3><span style="color: #d9534f;">█</span> 人形参数</h3>
+        <div><label for="figureScale">人形整体缩放 (0.1 - 5):</label><input type="number" id="figureScale" value="1" min="0.1" max="5" step="0.1"></div>
+        <div><label for="lookAtHeightOffset">观察点垂直偏移 (相对于人形中心, -2 to 2):</label><input type="number" id="lookAtHeightOffset" value="0" min="-2" max="2" step="0.05"></div>
+        
+        <h3><span style="color: #5cb85c;">►</span> 初始相机状态</h3>
+        <div><label for="initialDistance">初始距离 (1 - 20):</label><input type="number" id="initialDistance" value="7" min="1" max="20" step="0.1"></div>
+        <div><label for="initialElevationDeg">初始海拔角 (度, -90 to 90):</label><input type="number" id="initialElevationDeg" value="10" min="-90" max="90" step="1"></div>
+        <div><label for="initialAzimuthDeg">初始方位角 (度, 0 to 360):</label><input type="number" id="initialAzimuthDeg" value="0" min="0" max="360" step="1"></div>
+        <div><label for="fov">相机FOV (5 - 150):</label><input type="number" id="fov" value="50" min="5" max="150"></div>
+
+        <h3><span style="color: #f0ad4e;">↺</span> 相机动作段管理</h3>
+        <div>
+            <label for="numActionSlots">动作段数量:</label>
+            <input type="number" id="numActionSlots" value="3" min="0" max="20" style="width: 50px;">
+            <button id="updateSlotsButton" style="margin-left: 10px;">更新</button>
+        </div>
+        <div id="actionSegmentsContainer" class="table-container">
+            <!-- JS will generate a table here -->
+        </div>
+
+        <hr>
+        
+        <h3><span style="color: #5bc0de;">🎬</span> 动画预览</h3>
+        <div class="preview-controls">
+             <button id="previewPlayPauseButton">▶ 播放预览</button>
+             <button id="previewStopButton">■ 停止</button>
+             <span id="previewFrameCounter" style="margin-left: 10px; font-family: monospace;">帧: 0 / 300</span>
+        </div>
+        <input type="range" id="previewScrubber" value="0" min="0" max="299" style="width: 100%; margin-top: 5px;">
+
+        <hr>
+
+        <h3><span style="color: #337ab7;">⚙</span> 导出设置</h3>
+        <div><label for="numFrames">总动画帧数:</label><input type="number" id="numFrames" value="300" min="10" max="9999"></div>
+        <div><label for="outputFormat">导出格式:</label><select id="outputFormat"><option value="webm">WebM 视频</option><option value="png_sequence">PNG 序列</option></select></div>
+        <div><label for="videoWidth">视频宽度:</label><input type="number" id="videoWidth" value="640" min="100"></div>
+        <div><label for="videoHeight">视频高度:</label><input type="number" id="videoHeight" value="480" min="100"></div>
+        <div><label for="fps">视频帧率 (FPS):</label><input type="number" id="fps" value="30" min="1" max="60"></div>
+        
+        <button id="startButton">开始生成并导出</button>
+        <div id="status">状态：空闲</div>
+        <progress id="progressBar" value="0" max="100" style="width: 100%; display: none;"></progress>
+    </div>
+    <div id="drag-handle"></div>
+    <div id="canvasContainer"><canvas id="renderCanvas"></canvas></div>
+
+    <script src="libs/CCapture.all.min.js"></script>
+    <script type="module" src="main.js"></script>
+</body>
+</html>

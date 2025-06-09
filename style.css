@@ -1,0 +1,140 @@
+body {
+    font-family: sans-serif;
+    margin: 0;
+    display: flex;
+    height: 100vh;
+    background-color: #f0f0f0;
+    user-select: none; 
+}
+
+#controls {
+     /* width: 300px; <-- 移除固定的宽度 */
+     width: 450px;   /* JS会覆盖这个值，但保留一个初始值是好习惯 */
+     min-width: 320px; /* 新增：设置一个最小宽度，防止拖得太窄 */
+     max-width: 800px; /* 新增：设置一个最大宽度 */
+     padding: 20px;
+     background-color: #fff;
+     box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+     overflow-y: auto;
+     flex-shrink: 0; /* 新增：防止flex布局在窗口缩小时挤压此面板*/
+}
+
+/* --- 新增：拖动手柄的样式 --- */
+#drag-handle {
+    width: 8px;
+    background-color: #e0e0e0;
+    cursor: col-resize; /* 鼠标悬停时显示拖动光标 */
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+/* 给手柄中间加一点视觉提示 */
+#drag-handle::after {
+    content: '⋮';
+    color: #666;
+    font-size: 14px;
+}
+
+
+#controls h2, #controls h3 {
+    margin-top: 0;
+}
+
+#controls div {
+    margin-bottom: 15px;
+}
+
+#controls label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+#controls input[type="number"],
+#controls input[type="color"],
+#controls select {
+    width: calc(100% - 10px);
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+#controls button {
+    padding: 10px 15px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    width: 100%;
+}
+
+#controls button:hover {
+    background-color: #0056b3;
+}
+
+#canvasContainer {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    /* 新增：确保容器不会因为内容溢出 */
+    overflow: hidden; 
+}
+
+#renderCanvas {
+    border: 1px solid #ccc;
+    /* Canvas size will be set by JS */
+}
+
+#status {
+    margin-top: 10px;
+    font-style: italic;
+}
+#progressBar {
+    margin-top: 5px;
+}
+/* style.css (在已有样式基础上添加) */
+.table-container {
+    max-height: 300px; /* 如果动作段太多，允许滚动 */
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    margin-top: 10px;
+}
+
+#actionSegmentsContainer table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+#actionSegmentsContainer th,
+#actionSegmentsContainer td {
+    border: 1px solid #ddd;
+    padding: 4px;
+    text-align: center;
+    vertical-align: middle;
+}
+
+#actionSegmentsContainer th {
+    background-color: #f2f2f2;
+    position: sticky;
+    top: 0; /* 让表头在滚动时固定 */
+}
+
+#actionSegmentsContainer input[type="number"],
+#actionSegmentsContainer select {
+    width: 95%;
+    box-sizing: border-box; /* 让 padding 和 border 不会撑大元素 */
+    min-width: 50px;
+}
+
+#actionSegmentsContainer input[type="checkbox"] {
+    transform: scale(1.2);
+}
+
+.preview-controls button {
+    margin-right: 5px;
+}
