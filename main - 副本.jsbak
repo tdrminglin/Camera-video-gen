@@ -12,9 +12,9 @@ let targetFPS = 30;
 
 // --- 动画状态 ---
 // 人物
-const baseFigureBodyHeight = 0.7;
+const baseFigureBodyHeight = 0.9;
 const baseFigureHeadRadius = 0.25;
-let initialFigurePosition = new THREE.Vector3();
+let initialFigurePosition = new THREE.Vector3(); // 人物初始位置
 let figureActionSegments = [];
 let actualFigurePosX, actualFigurePosY, actualFigurePosZ;
 // 相机
@@ -111,7 +111,12 @@ function parseSegmentsFromHTML(prefix, count) {
 function createFigure(scale) {
     if (figureGroup && figureGroup.parent) {
         scene.remove(figureGroup);
-        figureGroup.traverse(child => { if (child.isMesh) { child.geometry?.dispose(); child.material?.dispose(); } });
+        figureGroup.traverse(child => {
+            if (child.isMesh) {
+                child.geometry?.dispose();
+                child.material?.dispose();
+            }
+        });
     }
     figureGroup = new THREE.Group();
     const headRadius = baseFigureHeadRadius * scale;
@@ -120,140 +125,144 @@ function createFigure(scale) {
     const bodyDepth = 0.25 * scale;
     const limbLength = 0.6 * scale;
     const limbRadius = 0.08 * scale;
-    const headMat = new THREE.MeshStandardMaterial({color:0xffff00, roughness:0.6});
-    const bodyMat = new THREE.MeshStandardMaterial({color:0x00ff00, roughness:0.7});
-    const limbMat = new THREE.MeshStandardMaterial({color:0xff0000, roughness:0.5});
+    const headMat = new THREE.MeshStandardMaterial({ color: 0xffff00, roughness: 0.6 });
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x00ff00, roughness: 0.7 });
+    const limbMat = new THREE.MeshStandardMaterial({ color: 0xff0000, roughness: 0.5 });
 
+    // 修正点1：正确创建和添加头部
     const head = new THREE.Mesh(new THREE.SphereGeometry(headRadius, 32, 16), headMat);
     head.position.y = bodyHeight / 2 + headRadius;
-    head.castShadow = true;
-
-    const featureMaterial = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 });
-    const eyeRadius = headRadius * 0.15;
-    const eyeGeometry = new THREE.SphereGeometry(eyeRadius, 12, 8);
-    const leftEye = new THREE.Mesh(eyeGeometry, featureMaterial);
-    leftEye.position.set(-headRadius * 0.4, headRadius * 0.2, headRadius * 0.85);
-    head.add(leftEye);
-    const rightEye = leftEye.clone();
-    rightEye.position.x = -leftEye.position.x;
-    head.add(rightEye);
-    const mouthWidth = headRadius * 0.5, mouthHeight = headRadius * 0.1, mouthDepth = headRadius * 0.1;
-    const mouthGeometry = new THREE.BoxGeometry(mouthWidth, mouthHeight, mouthDepth);
-    const mouth = new THREE.Mesh(mouthGeometry, featureMaterial);
-    mouth.position.set(0, -headRadius * 0.35, headRadius * 0.88);
-    head.add(mouth);
-    const earRadius = headRadius * 0.4, earThickness = headRadius * 0.1;
-    const earGeometry = new THREE.CylinderGeometry(earRadius, earRadius, earThickness, 16);
-    const leftEar = new THREE.Mesh(earGeometry, headMat);
-    leftEar.position.set(-headRadius * 0.9, headRadius * 0.2, -headRadius * 0.1);
-    leftEar.rotation.z = Math.PI / 2;
-    head.add(leftEar);
-    const rightEar = leftEar.clone();
-    rightEar.position.x = -leftEar.position.x;
-    head.add(rightEar);
-    
     figureGroup.add(head);
 
-    const body = new THREE.Mesh(new THREE.BoxGeometry(bodyWidth, bodyHeight, bodyDepth), bodyMat);
-    body.castShadow = true;
-    figureGroup.add(body);
-    
+    figureGroup.add(new THREE.Mesh(new THREE.BoxGeometry(bodyWidth, bodyHeight, bodyDepth), bodyMat));
+
     [
-        {x: -bodyWidth/2 - limbRadius, y: bodyHeight/2 - limbLength*0.3, arm: true}, {x: bodyWidth/2 + limbRadius, y: bodyHeight/2 - limbLength*0.3, arm: true},
-        {x: -bodyWidth/4, y: -bodyHeight/2, arm: false}, {x: bodyWidth/4, y: -bodyHeight/2, arm: false}
+        { x: -bodyWidth / 2 - limbRadius, y: bodyHeight / 2 - limbLength * 0.3, arm: true },
+        { x: bodyWidth / 2 + limbRadius, y: bodyHeight / 2 - limbLength * 0.3, arm: true },
+        { x: -bodyWidth / 4, y: -bodyHeight / 2, arm: false },
+        { x: bodyWidth / 4, y: -bodyHeight / 2, arm: false }
     ].forEach(p => {
         const limb = new THREE.Mesh(new THREE.CylinderGeometry(limbRadius, limbRadius, limbLength, 16), limbMat);
-        limb.position.y = p.y - (p.arm ? limbLength / 2 : 0);
-        limb.position.x = p.x;
-        limb.castShadow = true;
+        limb.position.set(p.x, p.y - (p.arm ? limbLength / 2 : 0), 0);
         figureGroup.add(limb);
     });
-
-    // --- 关键修正 ---
-    // 之前错误地减去了整个limbLength，现在修正为减去一半的limbLength，因为圆柱体的中心在其中点。
-    const lowestPointY = -bodyHeight / 2 - limbLength / 2;
-    // --- 修正结束 ---
-
-    initialFigurePosition.set(0, -lowestPointY + 0.01, 0);
+    figureGroup.traverse(o => { if (o.isMesh) o.castShadow = true; });
+    
+    // Y轴的计算逻辑修正，确保人物初始脚踩在地面上
+    const figureHeight = bodyHeight + limbLength;
+    initialFigurePosition.set(0, (bodyHeight / 2 + limbLength) - (bodyHeight / 2) + 0.01, 0);
     figureGroup.position.copy(initialFigurePosition);
     scene.add(figureGroup);
 }
 
 function initThreeJS(forRecording = false) {
-    const width = parseInt(videoWidthInput.value), height = parseInt(videoHeightInput.value);
+    const width = parseInt(videoWidthInput.value);
+    const height = parseInt(videoHeightInput.value);
+
     if (!renderer || renderer.domElement.width !== width || renderer.domElement.height !== height) {
         if (renderer) renderer.dispose();
         renderer = new THREE.WebGLRenderer({ canvas: canvasEl, antialias: true, preserveDrawingBuffer: true });
         renderer.setSize(width, height);
         renderer.setPixelRatio(window.devicePixelRatio > 1 && !forRecording ? 2 : 1);
     }
-    renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
     if (scene) {
-        while(scene.children.length > 0) {
-            const o = scene.children[0];
-            if (o.geometry) o.geometry.dispose();
-            if (o.material) {
-                if(Array.isArray(o.material)) o.material.forEach(m => m.dispose());
-                else o.material.dispose();
+        while (scene.children.length > 0) {
+            const object = scene.children[0];
+            if (object.geometry) object.geometry.dispose();
+            if (object.material) {
+                if (Array.isArray(object.material)) {
+                    object.material.forEach(material => material.dispose());
+                } else {
+                    object.material.dispose();
+                }
             }
-            if (o.texture) o.texture.dispose();
-            scene.remove(o);
+            if (object.texture) object.texture.dispose();
+            scene.remove(object);
         }
         if (scene.background) scene.background.dispose();
     }
     scene = new THREE.Scene();
-    const aspect = width / height, fov = parseFloat(fovInput.value);
-    if (!camera || camera.aspect !== aspect) camera = new THREE.PerspectiveCamera(fov, aspect, 0.1, 3000);
-    else { camera.fov = fov; camera.aspect = aspect; camera.updateProjectionMatrix(); }
+
+    const aspect = width / height;
+    const initialFov = parseFloat(fovInput.value);
+    if (!camera || camera.aspect !== aspect) {
+        camera = new THREE.PerspectiveCamera(initialFov, aspect, 0.1, 3000);
+    } else {
+        camera.fov = initialFov;
+        camera.aspect = aspect;
+        camera.updateProjectionMatrix();
+    }
+
     scene.add(new THREE.AmbientLight(0xffffff, 0.8));
     directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
-    directionalLight.position.set(25, 40, 30); directionalLight.castShadow = true;
+    directionalLight.position.set(25, 40, 30);
+    directionalLight.castShadow = true;
     Object.assign(directionalLight.shadow.camera, { near: 0.5, far: 150, left: -50, right: 50, top: 50, bottom: -50 });
-    directionalLight.shadow.mapSize.set(2048, 2048); directionalLight.shadow.bias = -0.0005;
+    directionalLight.shadow.mapSize.set(2048, 2048);
+    directionalLight.shadow.bias = -0.0005;
     scene.add(directionalLight);
+
     createFigure(parseFloat(figureScaleInput.value));
+
     const groundSize = 100;
-    ground = new THREE.Mesh(new THREE.PlaneGeometry(groundSize, groundSize), new THREE.MeshStandardMaterial({color: 0x666666, roughness: 0.95}));
-    ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true;
+    ground = new THREE.Mesh(new THREE.PlaneGeometry(groundSize, groundSize), new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.95 }));
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
     scene.add(ground);
-    const gridHelper = new THREE.GridHelper(groundSize, groundSize/2, 0x000000, 0x404040);
+
+    // 修正点2：正确创建和添加网格辅助器
+    const gridHelper = new THREE.GridHelper(groundSize, groundSize / 2, 0x000000, 0x404040);
     gridHelper.position.y = 0.01;
     scene.add(gridHelper);
+
     new THREE.CubeTextureLoader().setPath('textures/skybox/').load(['px.png', 'nx.png', 'py.png', 'ny.png', 'pz.png', 'nz.png'],
         tex => { scene.background = tex; renderSingleFrame(); }, undefined,
         () => { scene.background = new THREE.Color(0x607d8b); renderSingleFrame(); });
-    const distMat = new THREE.MeshStandardMaterial({color: 0x95a5a6, roughness: 0.9});
-    for (let i=0; i<30; i++) {
-        const s = Math.random()*6+4, angle = Math.random()*Math.PI*2, dist = groundSize/2*(0.8+Math.random()*0.4);
-        const o = new THREE.Mesh(new THREE.BoxGeometry(s,s,s), distMat);
-        o.position.set(Math.cos(angle)*dist, s/2, Math.sin(angle)*dist);
-        o.castShadow = o.receiveShadow = true; scene.add(o);
+    
+    const distMat = new THREE.MeshStandardMaterial({ color: 0x95a5a6, roughness: 0.9 });
+    for (let i = 0; i < 30; i++) {
+        const s = Math.random() * 6 + 4;
+        const angle = Math.random() * Math.PI * 2;
+        const dist = groundSize / 2 * (0.8 + Math.random() * 0.4);
+        const o = new THREE.Mesh(new THREE.BoxGeometry(s, s, s), distMat);
+        o.position.set(Math.cos(angle) * dist, s / 2, Math.sin(angle) * dist);
+        o.castShadow = o.receiveShadow = true;
+        scene.add(o);
     }
-    if (forRecording || !isPreviewing) resetAllAnimationStates();
+
+    if (forRecording || !isPreviewing) {
+        resetAllAnimationStates();
+    }
     updateAndRenderFrame(currentFrame);
 }
 
 function resetAllAnimationStates() {
-    actualFigurePosX = initialFigurePosition.x; actualFigurePosY = initialFigurePosition.y; actualFigurePosZ = initialFigurePosition.z;
+    actualFigurePosX = initialFigurePosition.x;
+    actualFigurePosY = initialFigurePosition.y;
+    actualFigurePosZ = initialFigurePosition.z;
     actualCamDistance = parseFloat(initialDistanceInput.value);
     actualCamElevationRad = parseFloat(initialElevationDegInput.value) * (Math.PI / 180);
     actualCamAzimuthRad = parseFloat(initialAzimuthDegInput.value) * (Math.PI / 180);
-    actualPanX = 0; actualPanY = 0;
-    actualFov = parseFloat(fovInput.value); actualCamRollRad = 0;
+    actualPanX = 0;
+    actualPanY = 0;
+    actualFov = parseFloat(fovInput.value);
+    actualCamRollRad = 0;
 }
 
 function updateAndRenderFrame(frame) {
     if (!figureGroup || !scene) return;
+    
     resetAllAnimationStates();
     
     for (let f = 0; f <= frame; f++) {
-        let states = {
-            figX: actualFigurePosX, figY: actualFigurePosY, figZ: actualFigurePosZ,
-            dist: actualCamDistance, elev: actualCamElevationRad, azim: actualCamAzimuthRad,
-            panX: actualPanX, panY: actualPanY, fov: actualFov, roll: actualCamRollRad
-        };
+        let frameTargetFigX = actualFigurePosX, frameTargetFigY = actualFigurePosY, frameTargetFigZ = actualFigurePosZ;
+        let frameTargetDist = actualCamDistance, frameTargetElev = actualCamElevationRad, frameTargetAzim = actualCamAzimuthRad;
+        let frameTargetPanX = actualPanX, frameTargetPanY = actualPanY, frameTargetFov = actualFov, frameTargetRoll = actualCamRollRad;
 
-        const apply = (segments) => {
+        const applySegments = (segments, states) => {
             segments.forEach(seg => {
                 if (f >= seg.startFrame && f <= seg.endFrame) {
                     const progress = seg.endFrame === seg.startFrame ? 1 : (f - seg.startFrame) / (seg.endFrame - seg.startFrame);
@@ -267,36 +276,41 @@ function updateAndRenderFrame(frame) {
                         case 'panX': states.panX = lerp(seg.startValue, seg.endValue, eased); break;
                         case 'panY': states.panY = lerp(seg.startValue, seg.endValue, eased); break;
                         case 'fov': states.fov = lerp(seg.startValue, seg.endValue, eased); break;
-                        case 'elevation': startRad = seg.startValueDeg*(Math.PI/180); endRad = seg.endValueDeg*(Math.PI/180); states.elev = lerp(startRad, endRad, eased); break;
-                        case 'azimuth': startRad = seg.startValueDeg*(Math.PI/180); endRad = seg.endValueDeg*(Math.PI/180); states.azim = lerp(startRad, endRad, eased); break;
-                        case 'roll': startRad = seg.startValueDeg*(Math.PI/180); endRad = seg.endValueDeg*(Math.PI/180); states.roll = lerp(startRad, endRad, eased); break;
+                        case 'elevation': startRad = seg.startValueDeg * (Math.PI / 180); endRad = seg.endValueDeg * (Math.PI / 180); states.elev = lerp(startRad, endRad, eased); break;
+                        case 'azimuth': startRad = seg.startValueDeg * (Math.PI / 180); endRad = seg.endValueDeg * (Math.PI / 180); states.azim = lerp(startRad, endRad, eased); break;
+                        case 'roll': startRad = seg.startValueDeg * (Math.PI / 180); endRad = seg.endValueDeg * (Math.PI / 180); states.roll = lerp(startRad, endRad, eased); break;
                     }
                 }
             });
         };
         
-        apply(figureActionSegments);
-        apply(cameraActionSegments);
-        
-        ({ figX: actualFigurePosX, figY: actualFigurePosY, figZ: actualFigurePosZ,
-           dist: actualCamDistance, elev: actualCamElevationRad, azim: actualCamAzimuthRad,
-           panX: actualPanX, panY: actualPanY, fov: actualFov, roll: actualCamRollRad
-        } = states);
+        let figStates = { figX: frameTargetFigX, figY: frameTargetFigY, figZ: frameTargetFigZ };
+        applySegments(figureActionSegments, figStates);
+        actualFigurePosX = figStates.figX; actualFigurePosY = figStates.figY; actualFigurePosZ = figStates.figZ;
+
+        let camStates = { dist: frameTargetDist, elev: frameTargetElev, azim: frameTargetAzim, panX: frameTargetPanX, panY: frameTargetPanY, fov: frameTargetFov, roll: frameTargetRoll };
+        applySegments(cameraActionSegments, camStates);
+        actualCamDistance = camStates.dist; actualCamElevationRad = camStates.elev; actualCamAzimuthRad = camStates.azim;
+        actualPanX = camStates.panX; actualPanY = camStates.panY; actualFov = camStates.fov; actualCamRollRad = camStates.roll;
     }
 
     figureGroup.position.set(actualFigurePosX, actualFigurePosY, actualFigurePosZ);
 
     const followMode = cameraFollowModeSelect.value;
     const baseLookAtTarget = (followMode === 'follow') ? figureGroup.position : initialFigurePosition;
+
+    const scale = parseFloat(figureScaleInput.value);
+    const verticalOffset = parseFloat(lookAtHeightOffsetInput.value);
+    const targetCenterY = baseLookAtTarget.y - (initialFigurePosition.y - (baseFigureBodyHeight * scale / 2)) + verticalOffset;
     
     const finalLookAtTarget = new THREE.Vector3(
         baseLookAtTarget.x + actualPanX,
-        baseLookAtTarget.y + parseFloat(lookAtHeightOffsetInput.value) + actualPanY,
+        targetCenterY + actualPanY,
         baseLookAtTarget.z
     );
 
     actualCamElevationRad = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, actualCamElevationRad));
-    actualCamDistance = Math.max(0.2 * parseFloat(figureScaleInput.value), actualCamDistance);
+    actualCamDistance = Math.max(0.2 * scale, actualCamDistance);
     if (camera.fov !== actualFov) { camera.fov = actualFov; camera.updateProjectionMatrix(); }
 
     const camX = finalLookAtTarget.x + actualCamDistance * Math.cos(actualCamElevationRad) * Math.sin(actualCamAzimuthRad);
@@ -311,24 +325,26 @@ function updateAndRenderFrame(frame) {
 }
 
 function renderSingleFrame() { if (renderer && scene && camera) renderer.render(scene, camera); }
-function animateAndRecord() { if(!isRecording)return; if(currentFrame>=totalAnimFrames){stopRecording();return;} statusDiv.textContent=`渲染中: ${currentFrame+1}/${totalAnimFrames}`; progressBar.value=((currentFrame+1)/totalAnimFrames)*100; updateAndRenderFrame(currentFrame); capturer?.capture(renderer.domElement); currentFrame++; if(isRecording)setTimeout(animateAndRecord,1); }
-function startRecording() { if(isRecording)return; stopPreview(); figureActionSegments=parseSegmentsFromHTML('figure',parseInt(numFigureActionSlotsInput.value)); cameraActionSegments=parseSegmentsFromHTML('camera',parseInt(numCameraActionSlotsInput.value)); currentFrame=0; totalAnimFrames=parseInt(numFramesInput.value); targetFPS=parseInt(fpsInput.value); initThreeJS(true); isRecording=true; startButton.disabled=true; startButton.textContent="录制中..."; progressBar.style.display='block'; progressBar.value=0; statusDiv.textContent='初始化录制...'; const format=outputFormatInput.value; if(format==='webm')capturer=new CCapture({format:'webm',framerate:targetFPS,quality:90,workersPath:'libs/'}); else if(format==='png_sequence')capturer=new CCapture({format:'png',framerate:targetFPS}); else return; capturer.start(); statusDiv.textContent='开始录制...'; animateAndRecord(); }
-function stopRecording() { if(!isRecording&&!capturer)return; isRecording=false; startButton.disabled=false; startButton.textContent="开始生成并导出"; progressBar.style.display='none'; if(capturer){statusDiv.textContent='处理视频/帧序列...'; capturer.stop(); capturer.save(blob=>{if(!blob){statusDiv.textContent='错误:处理视频失败。';capturer=null;requestPreviewUpdate();return;} const ext=outputFormatInput.value==='webm'?'webm':'tar'; const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`animation_${Date.now()}.${ext}`; a.click(); URL.revokeObjectURL(a.href); statusDiv.textContent=`导出完成: ${a.download}`; capturer=null; requestPreviewUpdate(); });}else{requestPreviewUpdate();} }
-function previewLoop() { if(!isPreviewing)return; updateAndRenderFrame(currentFrame); updatePreviewUI(); currentFrame++; if(currentFrame>=totalAnimFrames)currentFrame=0; previewAnimationRequest=requestAnimationFrame(previewLoop); }
-function togglePreview() { isPreviewing?pausePreview():playPreview(); }
-function playPreview() { if(isRecording)return; isPreviewing=true; previewPlayPauseButton.textContent='❚❚ 暂停预览'; statusDiv.textContent='预览播放中...'; figureActionSegments=parseSegmentsFromHTML('figure',parseInt(numFigureActionSlotsInput.value)); cameraActionSegments=parseSegmentsFromHTML('camera',parseInt(numCameraActionSlotsInput.value)); totalAnimFrames=parseInt(numFramesInput.value); updateScrubberMax(); if(currentFrame>=totalAnimFrames)currentFrame=0; cancelAnimationFrame(previewAnimationRequest); previewLoop(); }
-function pausePreview() { isPreviewing=false; cancelAnimationFrame(previewAnimationRequest); previewPlayPauseButton.textContent='▶ 播放预览'; statusDiv.textContent='预览已暂停。'; }
-function stopPreview() { pausePreview(); currentFrame=0; updateAndRenderFrame(currentFrame); updatePreviewUI(); statusDiv.textContent='预览已停止。'; }
-function updatePreviewUI() { previewScrubber.value=currentFrame; previewFrameCounter.textContent=`帧: ${currentFrame}/${totalAnimFrames}`; }
-function updateScrubberMax() { totalAnimFrames=parseInt(numFramesInput.value); previewScrubber.max=totalAnimFrames>0?totalAnimFrames-1:0; updatePreviewUI(); }
-let debounceTimeout; function requestPreviewUpdate() { if(isRecording)return; stopPreview(); clearTimeout(debounceTimeout); debounceTimeout=setTimeout(()=>{figureActionSegments=parseSegmentsFromHTML('figure',parseInt(numFigureActionSlotsInput.value)); cameraActionSegments=parseSegmentsFromHTML('camera',parseInt(numCameraActionSlotsInput.value)); currentFrame=0; initThreeJS(false); updateScrubberMax(); statusDiv.textContent='参数已更新。预览已刷新。';},300); }
-function handleUpdateCameraSlotsClick() { stopPreview(); cameraSegmentsContainer.innerHTML=createCameraActionHTML(parseInt(numCameraActionSlotsInput.value)); bindDynamicSegmentListeners('camera', parseInt(numCameraActionSlotsInput.value)); requestPreviewUpdate(); }
-function handleUpdateFigureSlotsClick() { stopPreview(); figureSegmentsContainer.innerHTML=createFigureActionHTML(parseInt(numFigureActionSlotsInput.value)); bindDynamicSegmentListeners('figure', parseInt(numFigureActionSlotsInput.value)); requestPreviewUpdate(); }
+
+function animateAndRecord() { if (!isRecording) return; if (currentFrame >= totalAnimFrames) { stopRecording(); return; } statusDiv.textContent = `渲染中: ${currentFrame + 1}/${totalAnimFrames}`; progressBar.value = ((currentFrame + 1) / totalAnimFrames) * 100; updateAndRenderFrame(currentFrame); capturer?.capture(renderer.domElement); currentFrame++; if (isRecording) setTimeout(animateAndRecord, 1); }
+function startRecording() { if (isRecording) return; stopPreview(); figureActionSegments = parseSegmentsFromHTML('figure', parseInt(numFigureActionSlotsInput.value)); cameraActionSegments = parseSegmentsFromHTML('camera', parseInt(numCameraActionSlotsInput.value)); currentFrame = 0; totalAnimFrames = parseInt(numFramesInput.value); targetFPS = parseInt(fpsInput.value); initThreeJS(true); isRecording = true; startButton.disabled = true; startButton.textContent = "录制中..."; progressBar.style.display = 'block'; progressBar.value = 0; statusDiv.textContent = '初始化录制...'; const format = outputFormatInput.value; if (format === 'webm') capturer = new CCapture({ format: 'webm', framerate: targetFPS, quality: 90, workersPath: 'libs/' }); else if (format === 'png_sequence') capturer = new CCapture({ format: 'png', framerate: targetFPS }); else return; capturer.start(); statusDiv.textContent = '开始录制...'; animateAndRecord(); }
+function stopRecording() { if (!isRecording && !capturer) return; isRecording = false; startButton.disabled = false; startButton.textContent = "开始生成并导出"; progressBar.style.display = 'none'; if (capturer) { statusDiv.textContent = '处理视频/帧序列...'; capturer.stop(); capturer.save(blob => { if (!blob) { statusDiv.textContent = '错误:处理视频失败。'; capturer = null; requestPreviewUpdate(); return; } const ext = outputFormatInput.value === 'webm' ? 'webm' : 'tar'; const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `animation_${Date.now()}.${ext}`; a.click(); URL.revokeObjectURL(a.href); statusDiv.textContent = `导出完成: ${a.download}`; capturer = null; requestPreviewUpdate(); }); } else { requestPreviewUpdate(); } }
+function previewLoop() { if (!isPreviewing) return; updateAndRenderFrame(currentFrame); updatePreviewUI(); currentFrame++; if (currentFrame >= totalAnimFrames) currentFrame = 0; previewAnimationRequest = requestAnimationFrame(previewLoop); }
+function togglePreview() { isPreviewing ? pausePreview() : playPreview(); }
+function playPreview() { if (isRecording) return; isPreviewing = true; previewPlayPauseButton.textContent = '❚❚ 暂停预览'; statusDiv.textContent = '预览播放中...'; figureActionSegments = parseSegmentsFromHTML('figure', parseInt(numFigureActionSlotsInput.value)); cameraActionSegments = parseSegmentsFromHTML('camera', parseInt(numCameraActionSlotsInput.value)); totalAnimFrames = parseInt(numFramesInput.value); updateScrubberMax(); if (currentFrame >= totalAnimFrames) currentFrame = 0; cancelAnimationFrame(previewAnimationRequest); previewLoop(); }
+function pausePreview() { isPreviewing = false; cancelAnimationFrame(previewAnimationRequest); previewPlayPauseButton.textContent = '▶ 播放预览'; statusDiv.textContent = '预览已暂停。'; }
+function stopPreview() { pausePreview(); currentFrame = 0; updateAndRenderFrame(currentFrame); updatePreviewUI(); statusDiv.textContent = '预览已停止。'; }
+function updatePreviewUI() { previewScrubber.value = currentFrame; previewFrameCounter.textContent = `帧: ${currentFrame}/${totalAnimFrames}`; }
+function updateScrubberMax() { totalAnimFrames = parseInt(numFramesInput.value); previewScrubber.max = totalAnimFrames > 0 ? totalAnimFrames - 1 : 0; updatePreviewUI(); }
+let debounceTimeout; function requestPreviewUpdate() { if (isRecording) return; stopPreview(); clearTimeout(debounceTimeout); debounceTimeout = setTimeout(() => { figureActionSegments = parseSegmentsFromHTML('figure', parseInt(numFigureActionSlotsInput.value)); cameraActionSegments = parseSegmentsFromHTML('camera', parseInt(numCameraActionSlotsInput.value)); currentFrame = 0; initThreeJS(false); updateScrubberMax(); statusDiv.textContent = '参数已更新。预览已刷新。'; }, 300); }
+function handleUpdateCameraSlotsClick() { stopPreview(); cameraSegmentsContainer.innerHTML = createCameraActionHTML(parseInt(numCameraActionSlotsInput.value)); bindDynamicSegmentListeners('camera', parseInt(numCameraActionSlotsInput.value)); requestPreviewUpdate(); }
+function handleUpdateFigureSlotsClick() { stopPreview(); figureSegmentsContainer.innerHTML = createFigureActionHTML(parseInt(numFigureActionSlotsInput.value)); bindDynamicSegmentListeners('figure', parseInt(numFigureActionSlotsInput.value)); requestPreviewUpdate(); }
 function bindDynamicSegmentListeners(prefix, count) { for (let i = 0; i < count; i++) { ['enabled', 'type', 'startFrame', 'endFrame', 'startValue', 'endValue', 'easing'].forEach(p => { const elem = document.getElementById(`${prefix}_${i}_${p}`); if (elem) elem.addEventListener('change', requestPreviewUpdate); }); } }
-function bindEventListeners() { startButton.addEventListener('click',startRecording); updateCameraSlotsButton.addEventListener('click',handleUpdateCameraSlotsClick); updateFigureSlotsButton.addEventListener('click',handleUpdateFigureSlotsClick); previewPlayPauseButton.addEventListener('click',togglePreview); previewStopButton.addEventListener('click',stopPreview); previewScrubber.addEventListener('input',()=>{if(isPreviewing)pausePreview();currentFrame=parseInt(previewScrubber.value);figureActionSegments=parseSegmentsFromHTML('figure',parseInt(numFigureActionSlotsInput.value));cameraActionSegments=parseSegmentsFromHTML('camera',parseInt(numCameraActionSlotsInput.value));updateAndRenderFrame(currentFrame);updatePreviewUI();}); const staticInputs = [figureScaleInput, lookAtHeightOffsetInput, initialDistanceInput, initialElevationDegInput, initialAzimuthDegInput, fovInput, videoWidthInput, videoHeightInput, numFramesInput, cameraFollowModeSelect]; staticInputs.forEach(i => { if (i) i.addEventListener('change', requestPreviewUpdate); }); numFramesInput.addEventListener('change', updateScrubberMax); bindDynamicSegmentListeners('camera', parseInt(numCameraActionSlotsInput.value)); bindDynamicSegmentListeners('figure', parseInt(numFigureActionSlotsInput.value)); if (dragHandle) dragHandle.addEventListener('mousedown', onDragStart); }
+function bindEventListeners() { startButton.addEventListener('click', startRecording); updateCameraSlotsButton.addEventListener('click', handleUpdateCameraSlotsClick); updateFigureSlotsButton.addEventListener('click', handleUpdateFigureSlotsClick); previewPlayPauseButton.addEventListener('click', togglePreview); previewStopButton.addEventListener('click', stopPreview); previewScrubber.addEventListener('input', () => { if (isPreviewing) pausePreview(); currentFrame = parseInt(previewScrubber.value); figureActionSegments = parseSegmentsFromHTML('figure', parseInt(numFigureActionSlotsInput.value)); cameraActionSegments = parseSegmentsFromHTML('camera', parseInt(numCameraActionSlotsInput.value)); updateAndRenderFrame(currentFrame); updatePreviewUI(); }); const staticInputs = [figureScaleInput, lookAtHeightOffsetInput, initialDistanceInput, initialElevationDegInput, initialAzimuthDegInput, fovInput, videoWidthInput, videoHeightInput, numFramesInput, cameraFollowModeSelect]; staticInputs.forEach(i => { if (i) i.addEventListener('change', requestPreviewUpdate); }); numFramesInput.addEventListener('change', updateScrubberMax); bindDynamicSegmentListeners('camera', parseInt(numCameraActionSlotsInput.value)); bindDynamicSegmentListeners('figure', parseInt(numFigureActionSlotsInput.value)); if (dragHandle) dragHandle.addEventListener('mousedown', onDragStart); }
 let isDragging = false; function onDragStart(e) { e.preventDefault(); isDragging = true; document.addEventListener('mousemove', onDragging); document.addEventListener('mouseup', onDragEnd); } function onDragging(e) { if (!isDragging) return; const c = document.getElementById('controls'); let n = e.clientX; const s = window.getComputedStyle(c); const min = parseInt(s.minWidth, 10); const max = parseInt(s.maxWidth, 10); if (n < min) n = min; if (n > max) n = max; c.style.width = n + 'px'; } function onDragEnd() { if (!isDragging) return; isDragging = false; document.removeEventListener('mousemove', onDragging); document.removeEventListener('mouseup', onDragEnd); requestPreviewUpdate(); }
 
 window.addEventListener('DOMContentLoaded', () => {
+    // 修正点3：使用直接、可靠的方式获取所有HTML元素
     canvasEl = document.getElementById('renderCanvas');
     numFramesInput = document.getElementById('numFrames');
     figureScaleInput = document.getElementById('figureScale');
