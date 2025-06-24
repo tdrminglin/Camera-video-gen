@@ -35,14 +35,19 @@ let cameraFollowModeSelect,
     numCameraActionSlotsInput, updateCameraSlotsButton, cameraSegmentsContainer,
     numFigureActionSlotsInput, updateFigureSlotsButton, figureSegmentsContainer,
     previewPlayPauseButton, previewStopButton, previewScrubber, previewFrameCounter,
-    saveConfigButton, loadConfigButton, configFileInput; // 修正: 变量名使用标准 'i'
+    saveConfigButton, loadConfigButton, configFileInput;
 
 
 // --- 工具函数 ---
 const lerp = (a, b, t) => a * (1 - t) + b * t;
 const EasingFunctions = {
-    linear:t=>t,easeInQuad:t=>t*t,easeOutQuad:t=>t*(2-t),easeInOutQuad:t=>t<.5?2*t*t:-1+(4-2*t)*t,
-    easeInCubic:t=>t*t*t,easeOutCubic:t=>(--t)*t*t+1,easeInOutCubic:t=>t<.5?4*t*t*t:(t-1)*(2*t-2)*(2*t-2)+1,
+    linear: t => t,
+    easeInQuad: t => t * t,
+    easeOutQuad: t => t * (2 - t),
+    easeInOutQuad: t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t,
+    easeInCubic: t => t * t * t,
+    easeOutCubic: t => (--t) * t * t + 1,
+    easeInOutCubic: t => t < 0.5 ? 4 * t * t * t : (t - 1) * (2 * t - 2) * (2 * t - 2) + 1,
 };
 
 // --- UI 生成函数 ---
@@ -58,7 +63,7 @@ function createFigureActionHTML(count) {
 
 function createSegmentTableHTML(prefix, count, typeOptions) {
     let tableHTML = `<table><thead><tr><th>#</th><th>启用</th><th>类型</th><th>起始帧</th><th>结束帧</th><th>起始值</th><th>结束值</th><th>缓动</th></tr></thead><tbody>`;
-    const easingOptions = Object.keys(EasingFunctions).map(n => `<option value="${n}">${n.charAt(0).toUpperCase()+n.slice(1)}</option>`).join('');
+    const easingOptions = Object.keys(EasingFunctions).map(n => `<option value="${n}">${n.charAt(0).toUpperCase() + n.slice(1)}</option>`).join('');
     for (let i = 0; i < count; i++) {
         tableHTML += `<tr>
             <td>${i + 1}</td>
@@ -110,8 +115,8 @@ function parseActiveSegments(segments) {
 }
 
 
-// --- 核心动画逻辑 ---
-function createFigure(scale) {if(figureGroup&&figureGroup.parent){scene.remove(figureGroup);figureGroup.traverse(child=>{if(child.isMesh){child.geometry?.dispose();child.material?.dispose();}});}figureGroup=new THREE.Group();const headRadius=baseFigureHeadRadius*scale;const bodyHeight=baseFigureBodyHeight*scale;const bodyWidth=0.5*scale;const bodyDepth=0.25*scale;const limbLength=0.6*scale;const limbRadius=0.08*scale;const headMat=new THREE.MeshStandardMaterial({color:0xffff00,roughness:0.6});const bodyMat=new THREE.MeshStandardMaterial({color:0x00ff00,roughness:0.7});const limbMat=new THREE.MeshStandardMaterial({color:0xff0000,roughness:0.5});const head=new THREE.Mesh(new THREE.SphereGeometry(headRadius,32,16),headMat);head.position.y=bodyHeight/2+headRadius;head.castShadow=true;const featureMaterial=new THREE.MeshStandardMaterial({color:0x222222,roughness:0.8});const eyeRadius=headRadius*0.15;const eyeGeometry=new THREE.SphereGeometry(eyeRadius,12,8);const leftEye=new THREE.Mesh(eyeGeometry,featureMaterial);leftEye.position.set(-headRadius*0.4,headRadius*0.2,headRadius*0.85);head.add(leftEye);const rightEye=leftEye.clone();rightEye.position.x=-leftEye.position.x;head.add(rightEye);const mouthWidth=headRadius*0.5,mouthHeight=headRadius*0.1,mouthDepth=headRadius*0.1;const mouthGeometry=new THREE.BoxGeometry(mouthWidth,mouthHeight,mouthDepth);const mouth=new THREE.Mesh(mouthGeometry,featureMaterial);mouth.position.set(0,-headRadius*0.35,headRadius*0.88);head.add(mouth);const earRadius=headRadius*0.4,earThickness=headRadius*0.1;const earGeometry=new THREE.CylinderGeometry(earRadius,earRadius,earThickness,16);const leftEar=new THREE.Mesh(earGeometry,headMat);leftEar.position.set(-headRadius*0.9,headRadius*0.2,-headRadius*0.1);leftEar.rotation.z=Math.PI/2;head.add(leftEar);const rightEar=leftEar.clone();rightEar.position.x=-leftEar.position.x;head.add(rightEar);figureGroup.add(head);const body=new THREE.Mesh(new THREE.BoxGeometry(bodyWidth,bodyHeight,bodyDepth),bodyMat);body.castShadow=true;figureGroup.add(body);[{x:-bodyWidth/2-limbRadius,y:bodyHeight/2-limbLength*0.3,arm:true},{x:bodyWidth/2+limbRadius,y:bodyHeight/2-limbLength*0.3,arm:true},{x:-bodyWidth/4,y:-bodyHeight/2,arm:false},{x:bodyWidth/4,y:-bodyHeight/2,arm:false}].forEach(p=>{const limb=new THREE.Mesh(new THREE.CylinderGeometry(limbRadius,limbRadius,limbLength,16),limbMat);limb.position.y=p.y-(p.arm?limbLength/2:0);limb.position.x=p.x;limb.castShadow=true;figureGroup.add(limb);});const lowestPointY=-bodyHeight/2-limbLength/2;initialFigurePosition.set(0,-lowestPointY+0.01,0);figureGroup.position.copy(initialFigurePosition);scene.add(figureGroup);}
+// --- 核心动画逻辑 (无改动) ---
+function createFigure(scale){if(figureGroup&&figureGroup.parent){scene.remove(figureGroup);figureGroup.traverse(child=>{if(child.isMesh){child.geometry?.dispose();child.material?.dispose();}});}figureGroup=new THREE.Group();const headRadius=baseFigureHeadRadius*scale;const bodyHeight=baseFigureBodyHeight*scale;const bodyWidth=0.5*scale;const bodyDepth=0.25*scale;const limbLength=0.6*scale;const limbRadius=0.08*scale;const headMat=new THREE.MeshStandardMaterial({color:0xffff00,roughness:0.6});const bodyMat=new THREE.MeshStandardMaterial({color:0x00ff00,roughness:0.7});const limbMat=new THREE.MeshStandardMaterial({color:0xff0000,roughness:0.5});const head=new THREE.Mesh(new THREE.SphereGeometry(headRadius,32,16),headMat);head.position.y=bodyHeight/2+headRadius;head.castShadow=true;const featureMaterial=new THREE.MeshStandardMaterial({color:0x222222,roughness:0.8});const eyeRadius=headRadius*0.15;const eyeGeometry=new THREE.SphereGeometry(eyeRadius,12,8);const leftEye=new THREE.Mesh(eyeGeometry,featureMaterial);leftEye.position.set(-headRadius*0.4,headRadius*0.2,headRadius*0.85);head.add(leftEye);const rightEye=leftEye.clone();rightEye.position.x=-leftEye.position.x;head.add(rightEye);const mouthWidth=headRadius*0.5,mouthHeight=headRadius*0.1,mouthDepth=headRadius*0.1;const mouthGeometry=new THREE.BoxGeometry(mouthWidth,mouthHeight,mouthDepth);const mouth=new THREE.Mesh(mouthGeometry,featureMaterial);mouth.position.set(0,-headRadius*0.35,headRadius*0.88);head.add(mouth);const earRadius=headRadius*0.4,earThickness=headRadius*0.1;const earGeometry=new THREE.CylinderGeometry(earRadius,earRadius,earThickness,16);const leftEar=new THREE.Mesh(earGeometry,headMat);leftEar.position.set(-headRadius*0.9,headRadius*0.2,-headRadius*0.1);leftEar.rotation.z=Math.PI/2;head.add(leftEar);const rightEar=leftEar.clone();rightEar.position.x=-leftEar.position.x;head.add(rightEar);figureGroup.add(head);const body=new THREE.Mesh(new THREE.BoxGeometry(bodyWidth,bodyHeight,bodyDepth),bodyMat);body.castShadow=true;figureGroup.add(body);[{x:-bodyWidth/2-limbRadius,y:bodyHeight/2-limbLength*0.3,arm:true},{x:bodyWidth/2+limbRadius,y:bodyHeight/2-limbLength*0.3,arm:true},{x:-bodyWidth/4,y:-bodyHeight/2,arm:false},{x:bodyWidth/4,y:-bodyHeight/2,arm:false}].forEach(p=>{const limb=new THREE.Mesh(new THREE.CylinderGeometry(limbRadius,limbRadius,limbLength,16),limbMat);limb.position.y=p.y-(p.arm?limbLength/2:0);limb.position.x=p.x;limb.castShadow=true;figureGroup.add(limb);});const lowestPointY=-bodyHeight/2-limbLength/2;initialFigurePosition.set(0,-lowestPointY+0.01,0);figureGroup.position.copy(initialFigurePosition);scene.add(figureGroup);}
 function initThreeJS(forRecording=false){const width=parseInt(videoWidthInput.value),height=parseInt(videoHeightInput.value);if(!renderer||renderer.domElement.width!==width||renderer.domElement.height!==height){if(renderer)renderer.dispose();renderer=new THREE.WebGLRenderer({canvas:canvasEl,antialias:true,preserveDrawingBuffer:true});renderer.setSize(width,height);renderer.setPixelRatio(window.devicePixelRatio>1&&!forRecording?2:1);}renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;if(scene){while(scene.children.length>0){const o=scene.children[0];if(o.geometry)o.geometry.dispose();if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material.dispose();}if(o.texture)o.texture.dispose();scene.remove(o);}if(scene.background)scene.background.dispose();}scene=new THREE.Scene();const aspect=width/height,fov=parseFloat(fovInput.value);if(!camera||camera.aspect!==aspect)camera=new THREE.PerspectiveCamera(fov,aspect,0.1,3000);else{camera.fov=fov;camera.aspect=aspect;camera.updateProjectionMatrix();}scene.add(new THREE.AmbientLight(0xffffff,0.8));directionalLight=new THREE.DirectionalLight(0xffffff,1.5);directionalLight.position.set(25,40,30);directionalLight.castShadow=true;Object.assign(directionalLight.shadow.camera,{near:0.5,far:150,left:-50,right:50,top:50,bottom:-50});directionalLight.shadow.mapSize.set(2048,2048);directionalLight.shadow.bias=-0.0005;scene.add(directionalLight);createFigure(parseFloat(figureScaleInput.value));const groundSize=100;ground=new THREE.Mesh(new THREE.PlaneGeometry(groundSize,groundSize),new THREE.MeshStandardMaterial({color:0x666666,roughness:0.95}));ground.rotation.x=-Math.PI/2;ground.receiveShadow=true;scene.add(ground);const gridHelper=new THREE.GridHelper(groundSize,groundSize/2,0x000000,0x404040);gridHelper.position.y=0.01;scene.add(gridHelper);new THREE.CubeTextureLoader().setPath('textures/skybox/').load(['px.png','nx.png','py.png','ny.png','pz.png','nz.png'],tex=>{scene.background=tex;renderSingleFrame();},undefined,()=>{scene.background=new THREE.Color(0x607d8b);renderSingleFrame();});const distMat=new THREE.MeshStandardMaterial({color:0x95a5a6,roughness:0.9});for(let i=0;i<30;i++){const s=Math.random()*6+4,angle=Math.random()*Math.PI*2,dist=groundSize/2*(0.8+Math.random()*0.4);const o=new THREE.Mesh(new THREE.BoxGeometry(s,s,s),distMat);o.position.set(Math.cos(angle)*dist,s/2,Math.sin(angle)*dist);o.castShadow=o.receiveShadow=true;scene.add(o);}if(forRecording||!isPreviewing)resetAllAnimationStates();updateAndRenderFrame(currentFrame);}
 function resetAllAnimationStates(){actualFigurePosX=initialFigurePosition.x;actualFigurePosY=initialFigurePosition.y;actualFigurePosZ=initialFigurePosition.z;actualCamDistance=parseFloat(initialDistanceInput.value);actualCamElevationRad=parseFloat(initialElevationDegInput.value)*(Math.PI/180);actualCamAzimuthRad=parseFloat(initialAzimuthDegInput.value)*(Math.PI/180);actualPanX=0;actualPanY=0;actualFov=parseFloat(fovInput.value);actualCamRollRad=0;}
 function updateAndRenderFrame(frame){if(!figureGroup||!scene)return;resetAllAnimationStates();for(let f=0;f<=frame;f++){let states={figX:actualFigurePosX,figY:actualFigurePosY,figZ:actualFigurePosZ,dist:actualCamDistance,elev:actualCamElevationRad,azim:actualCamAzimuthRad,panX:actualPanX,panY:actualPanY,fov:actualFov,roll:actualCamRollRad};const apply=(segments)=>{segments.forEach(seg=>{if(f>=seg.startFrame&&f<=seg.endFrame){const progress=seg.endFrame===seg.startFrame?1:(f-seg.startFrame)/(seg.endFrame-seg.startFrame);const eased=EasingFunctions[seg.easing](progress);let startRad,endRad;switch(seg.type){case'x_pos':states.figX=lerp(seg.startValue,seg.endValue,eased);break;case'y_pos':states.figY=lerp(initialFigurePosition.y+seg.startValue,initialFigurePosition.y+seg.endValue,eased);break;case'z_pos':states.figZ=lerp(seg.startValue,seg.endValue,eased);break;case'distance':states.dist=lerp(seg.startValue,seg.endValue,eased);break;case'panX':states.panX=lerp(seg.startValue,seg.endValue,eased);break;case'panY':states.panY=lerp(seg.startValue,seg.endValue,eased);break;case'fov':states.fov=lerp(seg.startValue,seg.endValue,eased);break;case'elevation':startRad=seg.startValueDeg*(Math.PI/180);endRad=seg.endValueDeg*(Math.PI/180);states.elev=lerp(startRad,endRad,eased);break;case'azimuth':startRad=seg.startValueDeg*(Math.PI/180);endRad=seg.endValueDeg*(Math.PI/180);states.azim=lerp(startRad,endRad,eased);break;case'roll':startRad=seg.startValueDeg*(Math.PI/180);endRad=seg.endValueDeg*(Math.PI/180);states.roll=lerp(startRad,endRad,eased);break;}}});};apply(figureActionSegments);apply(cameraActionSegments);({figX:actualFigurePosX,figY:actualFigurePosY,figZ:actualFigurePosZ,dist:actualCamDistance,elev:actualCamElevationRad,azim:actualCamAzimuthRad,panX:actualPanX,panY:actualPanY,fov:actualFov,roll:actualCamRollRad}=states);}figureGroup.position.set(actualFigurePosX,actualFigurePosY,actualFigurePosZ);const followMode=cameraFollowModeSelect.value;const baseLookAtTarget=followMode==='follow'?figureGroup.position:initialFigurePosition;const finalLookAtTarget=new THREE.Vector3(baseLookAtTarget.x+actualPanX,baseLookAtTarget.y+parseFloat(lookAtHeightOffsetInput.value)+actualPanY,baseLookAtTarget.z);actualCamElevationRad=Math.max(-Math.PI/2+0.01,Math.min(Math.PI/2-0.01,actualCamElevationRad));actualCamDistance=Math.max(0.2*parseFloat(figureScaleInput.value),actualCamDistance);if(camera.fov!==actualFov){camera.fov=actualFov;camera.updateProjectionMatrix();}const camX=finalLookAtTarget.x+actualCamDistance*Math.cos(actualCamElevationRad)*Math.sin(actualCamAzimuthRad);const camY=finalLookAtTarget.y+actualCamDistance*Math.sin(actualCamElevationRad);const camZ=finalLookAtTarget.z+actualCamDistance*Math.cos(actualCamElevationRad)*Math.cos(actualCamAzimuthRad);camera.position.set(camX,camY,camZ);const forward=new THREE.Vector3().subVectors(finalLookAtTarget,camera.position).normalize();camera.up.set(0,1,0).applyQuaternion(new THREE.Quaternion().setFromAxisAngle(forward,actualCamRollRad));camera.lookAt(finalLookAtTarget);renderSingleFrame();}
@@ -129,7 +134,6 @@ function updateScrubberMax(){totalAnimFrames=parseInt(numFramesInput.value);prev
 let debounceTimeout;function requestPreviewUpdate(){if(isRecording)return;stopPreview();clearTimeout(debounceTimeout);debounceTimeout=setTimeout(()=>{figureActionSegments=parseActiveSegments(gatherSegmentsFromUI('figure',parseInt(numFigureActionSlotsInput.value)));cameraActionSegments=parseActiveSegments(gatherSegmentsFromUI('camera',parseInt(numCameraActionSlotsInput.value)));currentFrame=0;initThreeJS(false);updateScrubberMax();statusDiv.textContent='参数已更新。预览已刷新。';},300);}
 function handleUpdateCameraSlotsClick(){stopPreview();cameraSegmentsContainer.innerHTML=createCameraActionHTML(parseInt(numCameraActionSlotsInput.value));bindDynamicSegmentListeners('camera',parseInt(numCameraActionSlotsInput.value));requestPreviewUpdate();}
 function handleUpdateFigureSlotsClick(){stopPreview();figureSegmentsContainer.innerHTML=createFigureActionHTML(parseInt(numFigureActionSlotsInput.value));bindDynamicSegmentListeners('figure',parseInt(numFigureActionSlotsInput.value));requestPreviewUpdate();}
-function bindDynamicSegmentListeners(prefix,count){for(let i=0;i<count;i++){['enabled','type','startFrame','endFrame','startValue','endValue','easing'].forEach(p=>{const elem=document.getElementById(`${prefix}_${i}_${p}`);if(elem)elem.addEventListener('change',requestPreviewUpdate);});}}
 let isDragging=false;function onDragStart(e){e.preventDefault();isDragging=true;document.addEventListener('mousemove',onDragging);document.addEventListener('mouseup',onDragEnd);}function onDragging(e){if(!isDragging)return;const c=document.getElementById('controls');let n=e.clientX;const s=window.getComputedStyle(c);const min=parseInt(s.minWidth,10);const max=parseInt(s.maxWidth,10);if(n<min)n=min;if(n>max)n=max;c.style.width=n+'px';}function onDragEnd(){if(!isDragging)return;isDragging=false;document.removeEventListener('mousemove',onDragging);document.removeEventListener('mouseup',onDragEnd);requestPreviewUpdate();}
 
 // --- 配置保存/读取功能 ---
@@ -154,9 +158,8 @@ function saveConfiguration() {
         figureSegments: gatherSegmentsFromUI('figure', parseInt(numFigureActionSlotsInput.value)),
         cameraSegments: gatherSegmentsFromUI('camera', parseInt(numCameraActionSlotsInput.value)),
     };
-
     const configString = JSON.stringify(config, null, 2);
-    const blob = new Blob([configString], { type: 'application/json' });
+    const blob = new Blob([configString], {type: 'application/json'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -171,7 +174,6 @@ function saveConfiguration() {
 function loadConfiguration(event) {
     const file = event.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = (e) => {
         try {
@@ -186,9 +188,12 @@ function loadConfiguration(event) {
     event.target.value = '';
 }
 
+// 关键修正: 重构 applyConfiguration 函数
 function applyConfiguration(config) {
     stopPreview();
+    clearTimeout(debounceTimeout);
 
+    // 步骤 1. 应用所有静态值
     figureScaleInput.value = config.figureScale ?? 1;
     cameraFollowModeSelect.value = config.cameraFollowMode ?? 'follow';
     lookAtHeightOffsetInput.value = config.lookAtHeightOffset ?? 0;
@@ -201,10 +206,15 @@ function applyConfiguration(config) {
     videoHeightInput.value = config.videoHeight ?? 480;
     fpsInput.value = config.fps ?? 30;
     outputFormatInput.value = config.outputFormat ?? 'webm';
+    numFigureActionSlotsInput.value = config.figureSegments?.length ?? 1;
+    numCameraActionSlotsInput.value = config.cameraSegments?.length ?? 1;
 
-    const applySegmentsToUI = (prefix, numSlotsInput, container, segmentsData) => {
-        numSlotsInput.value = segmentsData?.length ?? 1;
-        container.innerHTML = createSegmentTableHTML(prefix, numSlotsInput.value);
+    // 步骤 2. 仅重建UI表格
+    figureSegmentsContainer.innerHTML = createFigureActionHTML(parseInt(numFigureActionSlotsInput.value));
+    cameraSegmentsContainer.innerHTML = createCameraActionHTML(parseInt(numCameraActionSlotsInput.value));
+    
+    // 步骤 3. 定义一个独立的填充函数
+    const populateSegmentsFromData = (prefix, segmentsData) => {
         if (segmentsData) {
             segmentsData.forEach((seg, i) => {
                 document.getElementById(`${prefix}_${i}_enabled`).checked = seg.enabled ?? false;
@@ -218,17 +228,35 @@ function applyConfiguration(config) {
         }
     };
 
-    applySegmentsToUI('figure', numFigureActionSlotsInput, figureSegmentsContainer, config.figureSegments);
-    applySegmentsToUI('camera', numCameraActionSlotsInput, cameraSegmentsContainer, config.cameraSegments);
+    // 步骤 4. 调用填充函数，用数据填充UI
+    populateSegmentsFromData('figure', config.figureSegments);
+    populateSegmentsFromData('camera', config.cameraSegments);
     
-    bindEventListeners();
-    requestPreviewUpdate();
+    // 步骤 5. 在UI完全建立和填充后，才绑定事件监听器
+    bindDynamicSegmentListeners('figure', parseInt(numFigureActionSlotsInput.value));
+    bindDynamicSegmentListeners('camera', parseInt(numCameraActionSlotsInput.value));
+    
+    // 步骤 6. 最后，直接、同步地更新所有状态并刷新场景
+    figureActionSegments = parseActiveSegments(gatherSegmentsFromUI('figure', parseInt(numFigureActionSlotsInput.value)));
+    cameraActionSegments = parseActiveSegments(gatherSegmentsFromUI('camera', parseInt(numCameraActionSlotsInput.value)));
+    currentFrame = 0;
+    initThreeJS(false);
+    updateScrubberMax();
     statusDiv.textContent = '配置已成功载入！';
 }
 
 
 // --- 事件绑定 ---
-function bindEventListeners() {
+function bindDynamicSegmentListeners(prefix, count) {
+    for (let i = 0; i < count; i++) {
+        ['enabled', 'type', 'startFrame', 'endFrame', 'startValue', 'endValue', 'easing'].forEach(p => {
+            const elem = document.getElementById(`${prefix}_${i}_${p}`);
+            if (elem) elem.addEventListener('change', requestPreviewUpdate);
+        });
+    }
+}
+
+function bindStaticEventListeners() {
     startButton.addEventListener('click', startRecording);
     updateCameraSlotsButton.addEventListener('click', handleUpdateCameraSlotsClick);
     updateFigureSlotsButton.addEventListener('click', handleUpdateFigureSlotsClick);
@@ -242,16 +270,14 @@ function bindEventListeners() {
         updateAndRenderFrame(currentFrame);
         updatePreviewUI();
     });
-
     saveConfigButton.addEventListener('click', saveConfiguration);
-    loadConfigButton.addEventListener('click', () => configFileInput.click()); // 修正: 使用标准 'i'
-    configFileInput.addEventListener('change', loadConfiguration); // 修正: 使用标准 'i'
-
+    loadConfigButton.addEventListener('click', () => configFileInput.click());
+    configFileInput.addEventListener('change', loadConfiguration);
     const staticInputs = [figureScaleInput, lookAtHeightOffsetInput, initialDistanceInput, initialElevationDegInput, initialAzimuthDegInput, fovInput, videoWidthInput, videoHeightInput, numFramesInput, cameraFollowModeSelect];
-    staticInputs.forEach(i => { if (i) i.addEventListener('change', requestPreviewUpdate); });
+    staticInputs.forEach(i => {
+        if (i) i.addEventListener('change', requestPreviewUpdate);
+    });
     numFramesInput.addEventListener('change', updateScrubberMax);
-    bindDynamicSegmentListeners('camera', parseInt(numCameraActionSlotsInput.value));
-    bindDynamicSegmentListeners('figure', parseInt(numFigureActionSlotsInput.value));
     if (dragHandle) dragHandle.addEventListener('mousedown', onDragStart);
 }
 
@@ -287,12 +313,16 @@ window.addEventListener('DOMContentLoaded', () => {
     previewFrameCounter = document.getElementById('previewFrameCounter');
     saveConfigButton = document.getElementById('saveConfigButton');
     loadConfigButton = document.getElementById('loadConfigButton');
-    configFileInput = document.getElementById('configFileInput'); // 修正: 使用标准 'i'
+    configFileInput = document.getElementById('configFileInput');
 
     if (canvasEl) {
         cameraSegmentsContainer.innerHTML = createCameraActionHTML(parseInt(numCameraActionSlotsInput.value));
         figureSegmentsContainer.innerHTML = createFigureActionHTML(parseInt(numFigureActionSlotsInput.value));
-        bindEventListeners();
+        
+        bindStaticEventListeners();
+        bindDynamicSegmentListeners('camera', parseInt(numCameraActionSlotsInput.value));
+        bindDynamicSegmentListeners('figure', parseInt(numFigureActionSlotsInput.value));
+        
         initThreeJS(false);
         updateScrubberMax();
         statusDiv.textContent = '就绪。请设置动画参数。';
