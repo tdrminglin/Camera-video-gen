@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "figureScale": 1,
+  "cameraFollowMode": "follow",
+  "lookAtHeightOffset": 0,
+  "initialDistance": 7,
+  "initialElevationDeg": 5,
+  "initialAzimuthDeg": 0,
+  "fov": 50,
+  "numFrames": 180,
+  "videoWidth": 640,
+  "videoHeight": 480,
+  "fps": 30,
+  "outputFormat": "webm",
+  "numFigureActionSlots": 2,
+  "numCameraActionSlots": 2,
+  "figureSegments": [
+    {
+      "enabled": true,
+      "type": "y_pos",
+      "startFrame": 0,
+      "endFrame": 180,
+      "startValue": 0,
+      "endValue": 5,
+      "easing": "linear"
+    },
+    {
+      "enabled": true,
+      "type": "x_pos",
+      "startFrame": 0,
+      "endFrame": 180,
+      "startValue": 0,
+      "endValue": 5,
+      "easing": "linear"
+    }
+  ],
+  "cameraSegments": [
+    {
+      "enabled": false,
+      "type": "distance",
+      "startFrame": 0,
+      "endFrame": 50,
+      "startValue": 15,
+      "endValue": 7,
+      "easing": "linear"
+    },
+    {
+      "enabled": false,
+      "type": "azimuth",
+      "startFrame": 80,
+      "endFrame": 180,
+      "startValue": 0,
+      "endValue": 120,
+      "easing": "linear"
+    }
+  ]
+}
